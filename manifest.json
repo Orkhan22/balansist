@@ -1,0 +1,15 @@
+{
+  "name": "Cib Mühasibi",
+  "short_name": "Cib Mühasibi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2920/2920325.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

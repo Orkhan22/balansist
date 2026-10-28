@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cib Mühasibi - Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Supabase CDN (Bulud Baza Üçün) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-4 max-w-md mx-auto relative overflow-x-hidden flex flex-col justify-center">
+
+    <!-- TOAST BİLDİRİŞ -->
+    <div id="toastNotification" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 hidden bg-emerald-600 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold items-center gap-2">
+        <span>✅</span> <span id="toastText">Əməliyyat uğurla yerinə yetirildi!</span>
+    </div>
+
+    <!-- 🔐 GİRİŞ / SMS EKRANI -->
+    <div id="authScreen" class="w-full bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5">
+        <div class="text-center space-y-1">
+            <div class="inline-flex p-3 bg-indigo-50 text-indigo-600 rounded-2xl text-2xl mb-1 shadow-sm">📦</div>
+            <h1 class="text-xl font-bold text-slate-900">Cib Mühasibinə Giriş</h1>
+            <p class="text-xs text-slate-500">Mobil nömrənizlə daxil olun</p>
+        </div>
+
+        <div id="phoneLoginForm" class="space-y-4">
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Mobil Nömrə</label>
+                <div class="flex">
+                    <span class="bg-slate-100 border border-r-0 border-slate-200 text-xs text-slate-600 px-3 py-2.5 rounded-l-xl font-bold flex items-center">+994</span>
+                    <input type="text" id="inputPhone" maxlength="9" placeholder="xx xxx xx xx" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-r-xl focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+            <button onclick="sendSMSCode()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors cursor-pointer shadow-sm">SMS Kod Göndər</button>
+        </div>
+
+        <div id="smsVerifyForm" class="space-y-4 hidden">
+            <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-center text-xs text-indigo-700">
+                📲 Təsdiq kodu nömrənizə göndərildi.<br><b>(Demo Kod: 1234)</b>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">4 Rəqəmli Təsdiq Kodu</label>
+                <input type="text" id="inputSmsCode" placeholder="1234" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full text-center tracking-widest text-lg font-bold px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none">
+            </div>
+            <button onclick="verifySMSCode()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-sm cursor-pointer shadow-sm">Təsdiq Et və Daxil Ol</button>
+            <button onclick="backToPhoneInput()" class="w-full text-slate-500 text-xs text-center cursor-pointer">Nömrəni dəyiş</button>
+        </div>
+    </div>
+
+    <!-- 📦 ƏSAS TƏTBİQ PANELİ -->
+    <div id="appScreen" class="hidden space-y-4 py-4">
+        
+        <div id="packageWarningBanner" class="hidden bg-rose-600 text-white p-3 rounded-2xl shadow-sm text-xs font-bold flex justify-between items-center">
+            <span>⚠️ Paket azalıb (<span id="warningPackageCount">0</span> ədəd)!</span>
+            <div class="flex gap-1">
+                <button onclick="addPackageExpensePrompt()" class="bg-white text-rose-600 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer">Xərcə Yaz</button>
+                <button onclick="switchTab('settings')" class="bg-white text-rose-600 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer">Artır</button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 overflow-hidden flex items-center justify-center relative shadow-sm">
+                    <img id="appUserAvatarImg" class="w-full h-full object-cover hidden" alt="Profil">
+                    <span id="appUserInitial" class="text-sm font-bold text-indigo-600">O</span>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-slate-900" id="userGreeting">Orxan Cəfərli</h1>
+                    <p class="text-[9px] text-indigo-600 font-bold" id="userCompanyInfo">Stockchafarli</p>
+                    <p class="text-[10px] text-slate-400" id="userContactInfo">+994 xx xxx xx xx</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openCustomsModal()" class="px-2.5 py-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 cursor-pointer text-xs font-bold flex items-center gap-1 shadow-sm">🛡️ Gömrük</button>
+                <button onclick="handleLogout()" class="px-2.5 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 cursor-pointer text-xs font-bold shadow-sm">🚪</button>
+            </div>
+        </div>
+
+        <div class="flex bg-slate-200/70 p-1 rounded-2xl gap-1">
+            <button onclick="switchTab('dashboard')" id="tabDashboardBtn" class="flex-1 py-2 text-[10px] font-bold rounded-xl bg-white text-indigo-600 shadow-sm transition-all cursor-pointer">📊 Panel</button>
+            <button onclick="switchTab('orders')" id="tabOrdersBtn" class="flex-1 py-2 text-[10px] font-bold text-slate-600 rounded-xl transition-all cursor-pointer">📋 Sifarişlər</button>
+            <button onclick="switchTab('expenses')" id="tabExpensesBtn" class="flex-1 py-2 text-[10px] font-bold text-slate-600 rounded-xl transition-all cursor-pointer">💸 Xərclər</button>
+            <button onclick="switchTab('settings')" id="tabSettingsBtn" class="flex-1 py-2 text-[10px] font-bold text-slate-600 rounded-xl transition-all cursor-pointer">⚙️ Ayarlar</button>
+        </div>
+
+        <!-- TAB 1: ÜMUMI PANEL -->
+        <div id="tabDashboardContent" class="space-y-4">
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+                    <div class="text-[10px] text-slate-400 font-semibold">ÜMUMİ DÖVRİYYƏ</div>
+                    <div id="statTotalTurnover" class="text-base font-bold text-slate-900">0.00 ₼</div>
+                    <div id="statTurnoverBadge" class="text-[10px] text-emerald-600 font-bold">Keçən aya görə: --</div>
+                </div>
+                <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+                    <div class="text-[10px] text-slate-400 font-semibold">XALİS MƏNFƏƏT</div>
+                    <div id="statNetProfit" class="text-base font-bold text-emerald-600">0.00 ₼</div>
+                    <div id="statProfitBadge" class="text-[10px] text-emerald-600 font-bold">Keçən aya görə: --</div>
+                </div>
+                <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="text-[10px] text-slate-400 font-semibold">ÜMUMİ MAYA</div>
+                    <div id="statTotalCost" class="text-base font-bold text-indigo-600 mt-0.5">0.00 ₼</div>
+                </div>
+                <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="text-[10px] text-slate-400 font-semibold">QALIQ BORCLAR</div>
+                    <div id="statTotalDebt" class="text-base font-bold text-rose-600 mt-0.5">0.00 ₼</div>
+                </div>
+                <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm col-span-2">
+                    <div class="text-[10px] text-slate-400 font-semibold">ÜMUMİ XƏRCLƏR</div>
+                    <div id="statTotalExpenses" class="text-base font-bold text-amber-600 mt-0.5">0.00 ₼</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                <h2 class="text-sm font-bold text-slate-900 mb-4 flex justify-between items-center">
+                    <span id="formTitleText">➕ Yeni Sifariş</span>
+                    <span id="nextIdPreview" class="text-xs font-mono bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md">#ORD-0001</span>
+                </h2>
+                
+                <form id="orderForm" onsubmit="saveOrder(event)" class="space-y-3">
+                    <input type="hidden" id="editOrderId" value="">
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Məhsulun Adı</label>
+                        <input type="text" id="productName" placeholder="Məs: Qadın geyimi..." required class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Məhsul Detalı / Ölçü / Rəng (Qeyd)</label>
+                        <input type="text" id="productNote" placeholder="Məs: S ölçü, Qara rəng..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Mağaza / Platforma (Haradan alınıb?)</label>
+                        <input type="text" id="storePlatform" placeholder="Məs: Zara.com, Trendyol..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Müştəri Adı</label>
+                            <input type="text" id="customerName" required oninput="this.value = this.value.replace(/[^A-Za-zƏəİiıÖöÜüĞğŞşÇç\s]/g, '')" placeholder="Ad..." class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Müştəri Nömrəsi</label>
+                            <div class="flex">
+                                <span class="bg-slate-100 border border-r-0 border-slate-200 text-xs text-slate-600 px-2 py-2 rounded-l-xl font-bold flex items-center">+994</span>
+                                <input type="text" id="customerPhone" maxlength="9" placeholder="xx xxx xx xx" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-r-xl">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Gömrük Alan Şəxs</label>
+                            <select id="recipientSelect" required class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Sifariş Statusu</label>
+                            <select id="orderStatus" onchange="calculateProfit()" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white font-semibold">
+                                <option value="Sifariş gözləyir">⏳ Sifariş gözləyir</option>
+                                <option value="Sifariş olundu / Yolda">🟡 Sifariş olundu / Yolda</option>
+                                <option value="Anbarda">🔵 Anbarda</option>
+                                <option value="Təhvil verildi">🟢 Təhvil verildi</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-600 mb-1">Satış (AZN)</label>
+                            <input type="number" id="sellPrice" value="0" required oninput="calculateProfit()" class="w-full px-2 py-2 text-sm border border-slate-200 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-600 mb-1">Behc (Ödənən)</label>
+                            <input type="number" id="paidAmount" value="0" required oninput="calculateProfit()" class="w-full px-2 py-2 text-sm border border-slate-200 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-600 mb-1">Maya (AZN)</label>
+                            <input type="number" id="costPrice" value="0" required oninput="calculateProfit()" class="w-full px-2 py-2 text-sm border border-slate-200 rounded-xl">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Beynəlxalq Karqo Xərci</label>
+                        <div class="flex">
+                            <input type="number" id="cargoFee" value="0" required oninput="calculateProfit()" class="w-full px-3 py-2 text-sm border border-r-0 border-slate-200 rounded-l-xl focus:outline-none">
+                            <select id="cargoCurrency" onchange="calculateProfit()" class="bg-slate-100 border border-slate-200 text-xs font-bold px-3 rounded-r-xl border-l-0 text-slate-700 cursor-pointer">
+                                <option value="AZN">AZN (₼)</option>
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="CNY">CNY (¥)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 mt-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-600">Qalıq Borc:</span>
+                            <span id="liveDebt" class="font-bold text-rose-600">0.00 AZN</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs border-t border-slate-200 pt-1.5">
+                            <span class="font-semibold text-emerald-800">Xalis Mənfəət:</span>
+                            <span id="liveProfit" class="text-sm font-bold text-emerald-700">0.00 AZN</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitOrderBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm cursor-pointer mt-2">Sifarişi Yadda Saxla</button>
+                    <button type="button" id="cancelEditBtn" onclick="resetOrderForm()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 rounded-xl text-xs hidden cursor-pointer">Dəyişikliyi ləğv et</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 2: SİFARİŞLƏR -->
+        <div id="tabOrdersContent" class="space-y-4 hidden">
+            <div class="bg-indigo-900 text-white rounded-2xl p-4 shadow-sm flex justify-between items-center">
+                <div>
+                    <div class="text-[11px] text-indigo-200 font-semibold">Cəmi Sifariş: <span id="ordersCountBadge" class="text-white font-bold">0</span></div>
+                    <div class="text-xs text-indigo-100 font-semibold mt-0.5">Dövriyyə: <span id="ordersTotalSumBadge" class="text-emerald-400 font-bold">0.00 ₼</span></div>
+                </div>
+                <div class="text-right">
+                    <div class="text-[10px] text-indigo-300 uppercase">Xalis Mənfəət</div>
+                    <div id="ordersNetProfitBadge" class="text-base font-bold text-emerald-400">0.00 ₼</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-slate-900">🔍 Sürətli Axtarış və Filtrlər</h2>
+                    <button onclick="resetFilters()" class="text-[11px] text-indigo-600 hover:underline cursor-pointer">Sıfırla</button>
+                </div>
+                <div>
+                    <input type="text" id="searchInput" oninput="updateOrdersUI()" placeholder="Müştəri adı və ya nömrəsi ilə axtar..." class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium">
+                </div>
+                <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+                    <select id="filterStatus" onchange="updateOrdersUI()" class="px-2 py-1.5 border border-slate-200 rounded-xl bg-white font-medium">
+                        <option value="">Bütün Statuslar</option>
+                        <option value="Sifariş gözləyir">⏳ Gözləyir</option>
+                        <option value="Sifariş olundu / Yolda">🟡 Yolda</option>
+                        <option value="Anbarda">🔵 Anbarda</option>
+                        <option value="Təhvil verildi">🟢 Təhvil verildi</option>
+                    </select>
+                    <select id="filterRecipient" onchange="updateOrdersUI()" class="px-2 py-1.5 border border-slate-200 rounded-xl bg-white font-medium">
+                        <option value="">Gömrük Şəxsi</option>
+                    </select>
+                    <input type="date" id="filterDate" onchange="updateOrdersUI()" class="px-2 py-1.5 border border-slate-200 rounded-xl bg-white">
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-8">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-bold text-slate-900">📋 Sifarişlər Siyahısı</h2>
+                    <button onclick="exportToCSV()" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-[11px] font-bold border border-emerald-200 cursor-pointer">📊 Excel-ə İxrac</button>
+                </div>
+                <div id="ordersList" class="space-y-2 text-xs text-slate-600 max-h-[500px] overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <!-- TAB 3: XƏRCLƏR -->
+        <div id="tabExpensesContent" class="space-y-4 hidden pb-10">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+                <h2 class="text-sm font-bold text-slate-900">💸 Yeni Xərc Əlavə Et</h2>
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-[10px] text-slate-500 mb-1">Kateqoriya</label>
+                        <select id="expenseCategory" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-semibold">
+                            <option value="📢 Reklam və Marketinq">📢 Reklam və Marketinq</option>
+                            <option value="📦 Qablaşdırma">📦 Qablaşdırma</option>
+                            <option value="🚚 Yerli Kuryer / Çatdırılma">🚚 Yerli Kuryer / Çatdırılma</option>
+                            <option value="🛠️ Digər Əməliyyat xərcləri">🛠️ Digər Əməliyyat xərcləri</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-500 mb-1">Xərcin Adı</label>
+                        <input type="text" id="expenseTitle" placeholder="Məs: Instagram target..." class="w-full px-3 py-2 border border-slate-200 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-500 mb-1">Məbləğ (AZN)</label>
+                        <input type="number" step="0.01" id="expenseAmount" placeholder="0.00" class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-amber-600">
+                    </div>
+                    <button onclick="addExpense()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 rounded-xl text-xs cursor-pointer shadow-sm">Xərci Yadda Saxla</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <h2 class="text-sm font-bold text-slate-900">📊 Xərclər Tarixçəsi</h2>
+                    <span id="expensesTotalBadge" class="text-xs font-bold text-amber-600">Cəmi: 0.00 ₼</span>
+                </div>
+                <div id="expensesFullListContainer" class="space-y-2 max-h-[350px] overflow-y-auto text-xs"></div>
+            </div>
+        </div>
+
+        <!-- TAB 4: AYARLAR -->
+        <div id="tabSettingsContent" class="space-y-4 hidden pb-10">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+                <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">👤 Profil Tənzimləmələri</h2>
+                <div class="space-y-3 text-xs">
+                    <div class="flex flex-col items-center mb-1">
+                        <div class="w-16 h-16 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center relative mb-1.5 shadow-sm">
+                            <img id="settingsAvatarPreview" class="w-full h-full object-cover hidden" alt="Profil">
+                            <span id="settingsAvatarPlaceholder" class="text-xl text-slate-400">📷</span>
+                        </div>
+                        <div class="flex gap-3">
+                            <label class="text-[11px] text-indigo-600 font-bold cursor-pointer hover:underline">Şəkil seç<input type="file" id="settingsAvatarInput" accept="image/*" onchange="previewSettingsAvatar(event)" class="hidden"></label>
+                            <span id="removeAvatarBtn" class="text-[11px] text-rose-500 font-bold cursor-pointer hover:underline hidden" onclick="removeAvatar()">Şəkli sil</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="settingsName" oninput="this.value = this.value.replace(/[^A-Za-zƏəİiÖöÜüĞğŞşÇç\s]/g, '')" placeholder="Ad" class="px-3 py-2 border border-slate-200 rounded-xl font-semibold">
+                        <input type="text" id="settingsSurname" oninput="this.value = this.value.replace(/[^A-Za-zƏəİiÖöÜüĞğŞşÇç\s]/g, '')" placeholder="Soyad" class="px-3 py-2 border border-slate-200 rounded-xl font-semibold">
+                    </div>
+                    <input type="text" id="settingsCompanyName" placeholder="Şirkət / Mağaza adı" class="w-full px-3 py-2 border border-slate-200 rounded-xl font-semibold">
+                    <div class="flex">
+                        <span class="bg-slate-100 border border-r-0 border-slate-200 text-xs text-slate-600 px-3 py-2 rounded-l-xl font-bold flex items-center">+994</span>
+                        <input type="text" id="settingsPhone" maxlength="9" placeholder="xx xxx xx xx" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full px-3 py-2 border border-slate-200 rounded-r-xl">
+                    </div>
+                    <button onclick="saveProfileSettings()" class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-xl text-xs cursor-pointer">Profili Yenilə</button>
+                </div>
+            </div>
+
+            <!-- BACKUP / RESTORE BÖLMƏSİ -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+                <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">💾 Ehtiyat Nüsxə (Backup / Restore)</h2>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button onclick="exportBackupData()" class="bg-indigo-50 text-indigo-700 font-bold py-2.5 px-3 rounded-xl border border-indigo-200 hover:bg-indigo-100 cursor-pointer">📥 Nüsxəni Yüklə</button>
+                    <label class="bg-emerald-50 text-emerald-700 font-bold py-2.5 px-3 rounded-xl border border-emerald-200 hover:bg-emerald-100 text-center cursor-pointer">
+                        📤 Bərpa Et
+                        <input type="file" id="importFile" accept=".json" onchange="importBackupData(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+                <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">📦 Anbar Paket Rezervi</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] text-slate-500 mb-1">Qalan Paket Sayı</label>
+                        <input type="number" id="settingsPackageStock" value="50" onchange="savePackageStock()" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl font-bold text-indigo-600">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-500 mb-1">Paket Qiyməti (₼)</label>
+                        <input type="number" step="0.01" id="settingsPackageCost" value="0.15" onchange="savePackageStock()" class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl font-bold text-emerald-700">
+                    </div>
+                </div>
+            </div>
+
+            <!-- GÖMRÜK ŞƏXSLƏRİ VƏ FİN KOD BÖLMƏSİ -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+                <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2 flex justify-between items-center">
+                    <span>🛡️ Gömrük Şəxsləri və FİN</span>
+                    <button onclick="openCustomsModal()" class="text-xs text-indigo-600 font-bold hover:underline">Limitlərə Bax</button>
+                </h2>
+                <div class="space-y-2">
+                    <input type="text" id="settingsNewRecipientName" placeholder="Ad Soyad..." class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl">
+                    <div class="flex gap-2">
+                        <input type="text" id="settingsNewRecipientFin" placeholder="7 simvol FİN kod..." maxlength="7" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl uppercase font-mono">
+                        <button onclick="addRecipientFromSettings()" class="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-xl text-xs cursor-pointer">Əlavə et</button>
+                    </div>
+                </div>
+                <div id="settingsRecipientsList" class="space-y-1.5 max-h-40 overflow-y-auto mt-2"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- GÖMRÜK MODAL -->
+    <div id="trackerModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 text-white rounded-2xl w-full max-w-sm p-5 shadow-2xl border border-slate-800 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h2 class="text-base font-bold text-indigo-400">🛡️ Gömrük Limit İzləyicisi</h2>
+                <button onclick="openCustomsModal()" class="text-slate-400 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+            </div>
+            <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 space-y-2">
+                <div class="text-xs text-slate-400 font-semibold mb-1">Məzənnələr:</div>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div><label class="block text-[10px] text-slate-400">1 USD</label><input type="number" id="usdRate" value="1.70" step="0.01" onchange="saveData(); updateAll();" class="w-full bg-slate-900 text-emerald-400 px-2 py-1 rounded border border-slate-700 font-bold"></div>
+                    <div><label class="block text-xs font-medium text-slate-400">1 EUR</label><input type="number" id="eurRate" value="1.85" step="0.01" onchange="saveData(); calculateProfit();" class="w-full bg-slate-900 text-emerald-400 px-2 py-1 rounded border border-slate-700 font-bold"></div>
+                    <div><label class="block text-[10px] text-slate-400">1 CNY</label><input type="number" id="cnyRate" value="0.24" step="0.01" onchange="saveData(); calculateProfit();" class="w-full bg-slate-900 text-emerald-400 px-2 py-1 rounded border border-slate-700 font-bold"></div>
+                </div>
+            </div>
+            <div id="recipientsList" class="space-y-2.5 max-h-52 overflow-y-auto"></div>
+            <button onclick="openCustomsModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-xl text-xs cursor-pointer">Bağla</button>
+        </div>
+    </div>
+
+    <!-- Service Worker Qeydiyyatı -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW error:', err));
+        }
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>
