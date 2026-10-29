@@ -12,9 +12,6 @@ let orders = [];
 let expenses = [];
 let packageStock = localStorage.getItem('cib_packageStock') !== null ? parseInt(localStorage.getItem('cib_packageStock')) : 50;
 
-let tempPhone = "";
-let demoSmsCode = "1234";
-
 function showToast(text) {
     let toast = document.getElementById('toastNotification');
     if(!toast) return;
@@ -23,7 +20,7 @@ function showToast(text) {
     setTimeout(() => { toast.classList.add('hidden'); }, 2500);
 }
 
-// --- SUPABASE-DƏN MƏLUMATLARI ÇƏKMƏK (İSTİFADƏÇİYƏ ÖZƏL) ---
+// --- SUPABASE-DƏN MƏLUMATLARI ÇƏKMƏK (İSTİFADƏÇİYƏ ÖZƏL - EMAIL) ---
 async function loadDataFromSupabase() {
     if (!_supabase || !currentUser) {
         loadLocalFallback();
@@ -31,10 +28,10 @@ async function loadDataFromSupabase() {
     }
 
     try {
-        let { data: recData, error: recErr } = await _supabase.from('recipients').select('*').eq('user_id', currentUser.phone);
+        let { data: recData, error: recErr } = await _supabase.from('recipients').select('*').eq('user_id', currentUser.email);
         if(!recErr && recData) recipients = recData;
 
-        let { data: ordData, error: ordErr } = await _supabase.from('orders').select('*').eq('user_id', currentUser.phone);
+        let { data: ordData, error: ordErr } = await _supabase.from('orders').select('*').eq('user_id', currentUser.email);
         if(!ordErr && ordData) {
             orders = ordData.map(o => ({
                 id: o.id,
@@ -57,7 +54,7 @@ async function loadDataFromSupabase() {
             }));
         }
 
-        let { data: expData, error: expErr } = await _supabase.from('expenses').select('*').eq('user_id', currentUser.phone);
+        let { data: expData, error: expErr } = await _supabase.from('expenses').select('*').eq('user_id', currentUser.email);
         if(!expErr && expData) expenses = expData;
 
     } catch (err) {
@@ -99,7 +96,7 @@ async function syncOrderToSupabase(order) {
     if(!_supabase || !currentUser) return;
     await _supabase.from('orders').upsert({
         id: order.id,
-        user_id: currentUser.phone,
+        user_id: currentUser.email,
         product_name: order.productName,
         product_note: order.productNote,
         store_platform: order.storePlatform,
@@ -128,7 +125,7 @@ async function syncExpenseToSupabase(expense) {
     if(!_supabase || !currentUser) return;
     await _supabase.from('expenses').upsert({
         id: expense.id,
-        user_id: currentUser.phone,
+        user_id: currentUser.email,
         category: expense.category,
         title: expense.title,
         amount: expense.amount
@@ -143,7 +140,7 @@ async function deleteExpenseFromSupabase(id) {
 async function syncRecipientToSupabase(rec) {
     if(!_supabase || !currentUser) return;
     await _supabase.from('recipients').upsert({
-        user_id: currentUser.phone,
+        user_id: currentUser.email,
         name: rec.name,
         fin: rec.fin
     });
@@ -251,46 +248,32 @@ function loadSettingsAvatarUI() {
     }
 }
 
-function sendSMSCode() {
-    let phoneInputEl = document.getElementById('inputPhone');
-    if(!phoneInputEl) return;
+// --- E-POÇT İLƏ GİRİŞ FUNKSİYASI ---
+function handleEmailLogin(event) {
+    event.preventDefault();
+    let emailInputEl = document.getElementById('inputEmail');
+    if(!emailInputEl) return;
     
-    let phoneInput = phoneInputEl.value.trim();
-    let phoneRegex = /^\d{9}$/;
+    let email = emailInputEl.value.trim();
+    let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
-    if(!phoneRegex.test(phoneInput)) {
-        alert("Mobil nömrə yalnız rəqəmlərdən ibarət olmalı və tam 9 rəqəm olmalıdır! (Məs: xx xxx xx xx)");
+    if(!emailRegex.test(email)) {
+        alert("Zəhmət olmasa düzgün e-poçt ünvanı daxil edin!");
         return;
     }
     
-    tempPhone = "+994 " + phoneInput;
-    document.getElementById('phoneLoginForm').classList.add('hidden');
-    document.getElementById('smsVerifyForm').classList.remove('hidden');
-    showToast("Təsdiq kodu nömrənizə göndərildi!");
-}
-
-function verifySMSCode() {
-    let codeInput = document.getElementById('inputSmsCode').value.trim();
-    if(codeInput === demoSmsCode) {
-        let userObj = {
-            name: "Orxan",
-            surname: "Cəfərli",
-            companyName: "Stockchafarli",
-            phone: tempPhone,
-            avatar: ""
-        };
-        localStorage.setItem('cib_currentUser', JSON.stringify(userObj));
-        currentUser = userObj;
-        checkAuth();
-        showToast("Uğurla daxil olundu!");
-    } else {
-        alert("Yanlış təsdiq kodu! (Demo üçün: 1234 yazın)");
-    }
-}
-
-function backToPhoneInput() {
-    document.getElementById('smsVerifyForm').classList.add('hidden');
-    document.getElementById('phoneLoginForm').classList.remove('hidden');
+    let userObj = {
+        name: "Orxan",
+        surname: "Cəfərli",
+        companyName: "Stockchafarli",
+        email: email,
+        avatar: ""
+    };
+    
+    localStorage.setItem('cib_currentUser', JSON.stringify(userObj));
+    currentUser = userObj;
+    checkAuth();
+    showToast("Uğurla daxil olundu!");
 }
 
 function handleLogout() {
@@ -322,7 +305,7 @@ function checkAuth() {
         }
         
         let contactEl = document.getElementById('userContactInfo');
-        if(contactEl) contactEl.innerText = currentUser.phone || "";
+        if(contactEl) contactEl.innerText = currentUser.email || "";
         
         updateHeaderAvatar();
         loadSavedRates();
@@ -338,7 +321,7 @@ function loadSettingsData() {
         document.getElementById('settingsName').value = currentUser.name || '';
         document.getElementById('settingsSurname').value = currentUser.surname || '';
         document.getElementById('settingsCompanyName').value = currentUser.companyName || '';
-        document.getElementById('settingsPhone').value = (currentUser.phone || '').replace('+994 ', '').trim();
+        document.getElementById('settingsEmail').value = currentUser.email || '';
     }
     let pkgCostEl = document.getElementById('settingsPackageCost');
     if(pkgCostEl && localStorage.getItem('cib_unitPackageCost')) {
@@ -361,17 +344,17 @@ function saveProfileSettings() {
         return;
     }
 
-    let phoneClean = document.getElementById('settingsPhone').value.trim();
-    let phoneRegex = /^\d{9}$/;
-    if(!phoneRegex.test(phoneClean)) {
-        alert("Telefon nömrəsi yalnız rəqəmlərdən ibarət olmalı və tam 9 rəqəm olmalıdır!");
+    let emailClean = document.getElementById('settingsEmail').value.trim();
+    let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(emailClean)) {
+        alert("Düzgün e-poçt ünvanı daxil edin!");
         return;
     }
 
     currentUser.name = nameVal;
     currentUser.surname = surnameVal;
     currentUser.companyName = document.getElementById('settingsCompanyName').value.trim();
-    currentUser.phone = "+994 " + phoneClean;
+    currentUser.email = emailClean;
 
     localStorage.setItem('cib_currentUser', JSON.stringify(currentUser));
     checkAuth();
@@ -1036,7 +1019,7 @@ function exportToCSV() {
                 <tr>
                     <th>Kateqoriya</th>
                     <th>Xərcin Adı</th>
-                    <th>Məbləğ</th>
+                    <th>Məbləş</th>
                 </tr>
             </thead>
             <tbody>
