@@ -1,21 +1,15 @@
-// --- SUPABASE BAĞLANTISI (Öz Supabase Məlumatlarını Buraya Yazacaqsan) ---
-const SUPABASE_URL = 'BURAYA_SUPABASE_URL_LINKINI_YAZ';
-const SUPABASE_ANON_KEY = 'BURAYA_SUPABASE_ANON_KEY_ACARINI_YAZ';
-const _supabase = (typeof supabase !== 'undefined' && SUPABASE_URL !== 'BURAYA_SUPABASE_URL_LINKINI_YAZ') 
+// --- SUPABASE BAĞLANTISI ---
+const SUPABASE_URL = https://tfeljeyagcvoahsocfpu.supabase.co/rest/v1/;
+const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZWxqZXlhZ2N2b2Foc29jZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMTYyNTIsImV4cCI6MjEwODc5MjI1Mn0.29bfb_jAIeF0K1aL7OqqK14FpCOdoQQdEK06brME7fs;
+const _supabase = (typeof supabase !== 'undefined' && SUPABASE_URL !== https://tfeljeyagcvoahsocfpu.supabase.co/rest/v1/) 
     ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
     : null;
 
 let currentUser = JSON.parse(localStorage.getItem('cib_currentUser')) || null;
 
-let recipients = JSON.parse(localStorage.getItem('cib_recipients')) || [
-    { name: "Orxan", fin: "1ABC234" },
-    { name: "Elşən", fin: "2XYZ789" },
-    { name: "Aysel", fin: "3LMN456" }
-];
-recipients = recipients.map(r => typeof r === 'string' ? { name: r, fin: "------" } : r);
-
-let orders = JSON.parse(localStorage.getItem('cib_orders')) || [];
-let expenses = JSON.parse(localStorage.getItem('cib_expenses')) || [];
+let recipients = [];
+let orders = [];
+let expenses = [];
 let packageStock = localStorage.getItem('cib_packageStock') !== null ? parseInt(localStorage.getItem('cib_packageStock')) : 50;
 
 let tempPhone = "";
@@ -29,6 +23,142 @@ function showToast(text) {
     setTimeout(() => { toast.classList.add('hidden'); }, 2500);
 }
 
+// --- SUPABASE-DƏN MƏLUMATLARI ÇƏKMƏK (LOAD) ---
+async function loadDataFromSupabase() {
+    if (!_supabase) {
+        // Əgər Supabase qoşulmayıbsa localStorage-dən oxu
+        loadLocalFallback();
+        return;
+    }
+
+    try {
+        // Gömrük şəxsləri
+        let { data: recData, error: recErr } = await _supabase.from('recipients').select('*');
+        if(!recErr && recData) recipients = recData;
+
+        // Sifarişlər
+        let { data: ordData, error: ordErr } = await _supabase.from('orders').select('*');
+        if(!ordErr && ordData) {
+            orders = ordData.map(o => ({
+                id: o.id,
+                productName: o.product_name,
+                productNote: o.product_note,
+                storePlatform: o.store_platform,
+                customer: o.customer,
+                phone: o.phone,
+                recipient: o.recipient,
+                orderStatus: o.order_status,
+                sell: o.sell,
+                paid: o.paid,
+                debt: o.debt,
+                profit: o.profit,
+                itemUSD: o.item_usd,
+                cost: o.cost,
+                cargoInput: o.cargo_input,
+                cargoCurrency: o.cargo_currency,
+                date: o.date
+            }));
+        }
+
+        // Xərclər
+        let { data: expData, error: expErr } = await _supabase.from('expenses').select('*');
+        if(!expErr && expData) expenses = expData;
+
+    } catch (err) {
+        console.log("Supabase yükləmə xətası, yerli yaddaşa keçilir:", err);
+        loadLocalFallback();
+    }
+    
+    updateAll();
+}
+
+function loadLocalFallback() {
+    recipients = JSON.parse(localStorage.getItem('cib_recipients')) || [
+        { name: "Orxan", fin: "1ABC234" },
+        { name: "Elşən", fin: "2XYZ789" },
+        { name: "Aysel", fin: "3LMN456" }
+    ];
+    orders = JSON.parse(localStorage.getItem('cib_orders')) || [];
+    expenses = JSON.parse(localStorage.getItem('cib_expenses')) || [];
+}
+
+// --- MƏLUMATLARI SUPABASE-Ə YAZMAQ (SAVE) ---
+async function saveData() {
+    // Həmçinin localStorage-də ehtiyat kimi saxlayırıq
+    localStorage.setItem('cib_recipients', JSON.stringify(recipients));
+    localStorage.setItem('cib_orders', JSON.stringify(orders));
+    localStorage.setItem('cib_expenses', JSON.stringify(expenses));
+    localStorage.setItem('cib_packageStock', packageStock);
+
+    let pkgCostEl = document.getElementById('settingsPackageCost');
+    if(pkgCostEl) {
+        localStorage.setItem('cib_unitPackageCost', pkgCostEl.value);
+    }
+    let usdEl = document.getElementById('usdRate');
+    if(usdEl) {
+        localStorage.setItem('cib_usdRate', usdEl.value);
+        localStorage.setItem('cib_eurRate', document.getElementById('eurRate').value);
+        localStorage.setItem('cib_cnyRate', document.getElementById('cnyRate').value);
+    }
+}
+
+async function syncOrderToSupabase(order) {
+    if(!_supabase) return;
+    await _supabase.from('orders').upsert({
+        id: order.id,
+        product_name: order.productName,
+        product_note: order.productNote,
+        store_platform: order.storePlatform,
+        customer: order.customer,
+        phone: order.phone,
+        recipient: order.recipient,
+        order_status: order.orderStatus,
+        sell: order.sell,
+        paid: order.paid,
+        debt: order.debt,
+        profit: order.profit,
+        item_usd: order.itemUSD,
+        cost: order.cost,
+        cargo_input: order.cargoInput,
+        cargo_currency: order.cargoCurrency,
+        date: order.date
+    });
+}
+
+async function deleteOrderFromSupabase(id) {
+    if(!_supabase) return;
+    await _supabase.from('orders').delete().eq('id', id);
+}
+
+async function syncExpenseToSupabase(expense) {
+    if(!_supabase) return;
+    await _supabase.from('expenses').upsert({
+        id: expense.id,
+        category: expense.category,
+        title: expense.title,
+        amount: expense.amount
+    });
+}
+
+async function deleteExpenseFromSupabase(id) {
+    if(!_supabase) return;
+    await _supabase.from('expenses').delete().eq('id', id);
+}
+
+async function syncRecipientToSupabase(rec) {
+    if(!_supabase) return;
+    await _supabase.from('recipients').upsert({
+        name: rec.name,
+        fin: rec.fin
+    });
+}
+
+async function deleteRecipientFromSupabase(name) {
+    if(!_supabase) return;
+    await _supabase.from('recipients').delete().eq('name', name);
+}
+
+// --- TƏTBİQİN İDARƏEDİCİ FUNKSİYALARI ---
 function switchTab(tab) {
     const dashBtn = document.getElementById('tabDashboardBtn');
     const ordersBtn = document.getElementById('tabOrdersBtn');
@@ -200,7 +330,7 @@ function checkAuth() {
         
         updateHeaderAvatar();
         loadSavedRates();
-        updateAll();
+        loadDataFromSupabase();
     } else {
         authScreen.classList.remove('hidden');
         appScreen.classList.add('hidden');
@@ -261,23 +391,6 @@ function savePackageStock() {
     updateAll();
 }
 
-function saveData() {
-    localStorage.setItem('cib_recipients', JSON.stringify(recipients));
-    localStorage.setItem('cib_orders', JSON.stringify(orders));
-    localStorage.setItem('cib_expenses', JSON.stringify(expenses));
-    localStorage.setItem('cib_packageStock', packageStock);
-    let pkgCostEl = document.getElementById('settingsPackageCost');
-    if(pkgCostEl) {
-        localStorage.setItem('cib_unitPackageCost', pkgCostEl.value);
-    }
-    let usdEl = document.getElementById('usdRate');
-    if(usdEl) {
-        localStorage.setItem('cib_usdRate', usdEl.value);
-        localStorage.setItem('cib_eurRate', document.getElementById('eurRate').value);
-        localStorage.setItem('cib_cnyRate', document.getElementById('cnyRate').value);
-    }
-}
-
 function loadSavedRates() {
     let pkgCost = localStorage.getItem('cib_unitPackageCost') || "0.15";
     let pkgCostEl = document.getElementById('settingsPackageCost');
@@ -326,7 +439,7 @@ function updateRecipientSelect() {
     if(currentFilter && filterSelect) filterSelect.value = currentFilter;
 }
 
-function addRecipientFromSettings() {
+async function addRecipientFromSettings() {
     let nameInput = document.getElementById('settingsNewRecipientName');
     let finInput = document.getElementById('settingsNewRecipientFin');
     
@@ -336,7 +449,10 @@ function addRecipientFromSettings() {
     if(!name) { alert("Zəhmət olmasa adı daxil edin!"); return; }
     if(!fin) { alert("Zəhmət olmasa FİN kodu daxil edin!"); return; }
 
-    recipients.push({ name, fin });
+    let newRec = { name, fin };
+    recipients.push(newRec);
+    await syncRecipientToSupabase(newRec);
+
     nameInput.value = '';
     finInput.value = '';
     saveData();
@@ -345,9 +461,10 @@ function addRecipientFromSettings() {
     showToast("Yeni gömrük şəxsi əlavə olundu!");
 }
 
-function removeRecipient(name) {
+async function removeRecipient(name) {
     if(recipients.length <= 1) { alert("Ən azı 1 gömrük adamı qalmalıdır!"); return; }
     recipients = recipients.filter(r => r.name !== name);
+    await deleteRecipientFromSupabase(name);
     saveData();
     updateAll();
     updateSettingsRecipientsList();
@@ -380,7 +497,7 @@ function updateRecipientsUI() {
 
     recipients.forEach(r => {
         let recipientOrders = orders.filter(o => o.recipient === r.name && o.date && o.date.startsWith(currentYearMonth) && o.orderStatus !== 'Sifariş gözləyir');
-        let usedUSD = recipientOrders.reduce((sum, o) => sum + o.itemUSD, 0);
+        let usedUSD = recipientOrders.reduce((sum, o) => sum + (o.itemUSD || 0), 0);
         let countOrders = recipientOrders.length;
         let remainingUSD = 300 - usedUSD;
         let isCritical = remainingUSD < 50;
@@ -424,13 +541,16 @@ function calculateProfit() {
     profitEl.className = profit >= 0 ? "text-sm font-bold text-emerald-700" : "text-sm font-bold text-rose-600";
 }
 
-function addExpense() {
+async function addExpense() {
     let category = document.getElementById('expenseCategory').value;
     let title = document.getElementById('expenseTitle').value.trim();
     let amount = parseFloat(document.getElementById('expenseAmount').value) || 0;
     if(!title || amount <= 0) { alert("Xərc adını və məbləğ daxil edin!"); return; }
 
-    expenses.unshift({ id: Date.now(), category, title, amount });
+    let newExp = { id: Date.now(), category, title, amount };
+    expenses.unshift(newExp);
+    await syncExpenseToSupabase(newExp);
+
     document.getElementById('expenseTitle').value = '';
     document.getElementById('expenseAmount').value = '';
     saveData();
@@ -438,17 +558,21 @@ function addExpense() {
     showToast("Xərc qeydə alındı!");
 }
 
-function addPackageExpensePrompt() {
+async function addPackageExpensePrompt() {
     let cost = (parseFloat(localStorage.getItem('cib_unitPackageCost')) || 0.15) * 50;
-    expenses.unshift({ id: Date.now(), category: "📦 Qablaşdırma", title: "Paket ehtiyatının yenilənməsi (50 ədəd)", amount: cost });
+    let newExp = { id: Date.now(), category: "📦 Qablaşdırma", title: "Paket ehtiyatının yenilənməsi (50 ədəd)", amount: cost };
+    expenses.unshift(newExp);
+    await syncExpenseToSupabase(newExp);
+
     packageStock += 50;
     saveData();
     updateAll();
     showToast("Paket xərci qeydə alındı və ehtiyat artırıldı!");
 }
 
-function deleteExpense(id) {
+async function deleteExpense(id) {
     expenses = expenses.filter(e => e.id !== id);
+    await deleteExpenseFromSupabase(id);
     saveData();
     updateAll();
     showToast("Xərc silindi!");
@@ -482,7 +606,7 @@ function updateExpensesUI() {
     });
 }
 
-function saveOrder(event) {
+async function saveOrder(event) {
     event.preventDefault();
     
     let phoneInput = document.getElementById('customerPhone').value.trim();
@@ -516,6 +640,7 @@ function saveOrder(event) {
     let now = new Date();
     let dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
+    let targetOrder;
     if (editId) {
         let index = orders.findIndex(o => o.id === editId);
         if (index !== -1) {
@@ -524,6 +649,7 @@ function saveOrder(event) {
                 packageStock = Math.max(0, packageStock - 1);
             }
             orders[index] = { ...orders[index], productName, productNote, storePlatform, customer, phone, recipient, orderStatus, sell, paid, debt, profit, itemUSD, cost, cargoInput, cargoCurrency };
+            targetOrder = orders[index];
         }
         showToast("Sifariş yeniləndi!");
         resetOrderForm();
@@ -532,11 +658,13 @@ function saveOrder(event) {
         if(orderStatus !== 'Sifariş gözləyir') {
             packageStock = Math.max(0, packageStock - 1);
         }
-        orders.unshift({ id, productName, productNote, storePlatform, customer, phone, recipient, orderStatus, sell, paid, debt, profit, itemUSD, cost, cargoInput, cargoCurrency, date: dateStr });
+        targetOrder = { id, productName, productNote, storePlatform, customer, phone, recipient, orderStatus, sell, paid, debt, profit, itemUSD, cost, cargoInput, cargoCurrency, date: dateStr };
+        orders.unshift(targetOrder);
         showToast("Sifariş yadda saxlanıldı!");
         document.getElementById('orderForm').reset();
     }
 
+    await syncOrderToSupabase(targetOrder);
     saveData();
     updateAll();
     document.getElementById('liveProfit').innerText = "0.00 AZN";
@@ -568,13 +696,14 @@ function editOrder(id) {
     calculateProfit();
 }
 
-function deleteOrder(id) {
+async function deleteOrder(id) {
     if(confirm("Bu sifarişi silmək istədiyinizə əminsinizmi?")) {
         let o = orders.find(x => x.id === id);
         if(o && o.orderStatus !== 'Sifariş gözləyir') {
             packageStock += 1;
         }
         orders = orders.filter(x => x.id !== id);
+        await deleteOrderFromSupabase(id);
         saveData();
         updateAll();
         showToast("Sifariş silindi!");
@@ -761,7 +890,7 @@ function exportBackupData() {
     let url = URL.createObjectURL(blob);
     let a = document.createElement('a');
     a.href = url;
-    a.download = 'Cib_Muhasibi_Backup_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.download = 'Balansist_Backup_' + new Date().toISOString().slice(0, 10) + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -772,14 +901,13 @@ function importBackupData(event) {
     let file = event.target.files[0];
     if(!file) return;
     let reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             let data = JSON.parse(e.target.result);
             if(data.orders && data.expenses) {
                 orders = data.orders;
                 expenses = data.expenses;
                 recipients = data.recipients || recipients;
-                recipients = recipients.map(r => typeof r === 'string' ? { name: r, fin: "------" } : r);
                 packageStock = data.packageStock !== undefined ? data.packageStock : packageStock;
                 if(data.currentUser) {
                     currentUser = data.currentUser;
@@ -862,7 +990,7 @@ function exportToCSV() {
             <x:ExcelWorkbook>
                 <x:ExcelWorksheets>
                     <x:ExcelWorksheet>
-                        <x:Name>Cib Mühasibi Hesabat</x:Name>
+                        <x:Name>Balansist Hesabat</x:Name>
                         <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
                     </x:ExcelWorksheet>
                 </x:ExcelWorksheets>
@@ -880,7 +1008,7 @@ function exportToCSV() {
     </head>
     <body>
         <table>
-            <tr><td colspan="4" class="title">CİB MÜHASİBİ - RƏSMİ BİZNES HESABATI</td></tr>
+            <tr><td colspan="4" class="title">BALANSİST - RƏSMİ BİZNES HESABATI</td></tr>
             <tr><td colspan="4" class="subtitle">İstifadəçi: ${currentUser ? currentUser.name + ' ' + currentUser.surname : 'Orxan Cəfərli'} | Şirkət: ${currentUser && currentUser.companyName ? currentUser.companyName : 'Stockchafarli'} | Tarix: ${new Date().toLocaleDateString('az-AZ')}</td></tr>
         </table>
 
@@ -936,7 +1064,7 @@ function exportToCSV() {
     let url = URL.createObjectURL(blob);
     let a = document.createElement('a');
     a.href = url;
-    a.download = 'Cib_Muhasibi_Hesabat.xls';
+    a.download = 'Balansist_Hesabat.xls';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
