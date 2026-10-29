@@ -1,6 +1,6 @@
 // Supabase Qoşulması
-const SUPABASE_URL = "BURAYA_SUPABASE_URL_YAZ"; 
-const SUPABASE_ANON_KEY = "BURAYA_SUPABASE_ANON_KEY_YAZ";
+const SUPABASE_URL = "https://tfeljeyagcvoahsocfpu.supabase.co"; 
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZWxqZXlhZ2N2b2Foc29jZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMTYyNTIsImV4cCI6MjEwODc5MjI1Mn0.29bfb_jAIeF0K1aL7OqqK14FpCOdoQQdEK06brME7fs";
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
