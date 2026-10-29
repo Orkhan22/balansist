@@ -23,18 +23,18 @@ function showToast(text) {
     setTimeout(() => { toast.classList.add('hidden'); }, 2500);
 }
 
-// --- SUPABASE-DƏN MƏLUMATLARI ÇƏKMƏK (LOAD) ---
+// --- SUPABASE-DƏN MƏLUMATLARI ÇƏKMƏK (İSTİFADƏÇİYƏ ÖZƏL) ---
 async function loadDataFromSupabase() {
-    if (!_supabase) {
+    if (!_supabase || !currentUser) {
         loadLocalFallback();
         return;
     }
 
     try {
-        let { data: recData, error: recErr } = await _supabase.from('recipients').select('*');
+        let { data: recData, error: recErr } = await _supabase.from('recipients').select('*').eq('user_id', currentUser.phone);
         if(!recErr && recData) recipients = recData;
 
-        let { data: ordData, error: ordErr } = await _supabase.from('orders').select('*');
+        let { data: ordData, error: ordErr } = await _supabase.from('orders').select('*').eq('user_id', currentUser.phone);
         if(!ordErr && ordData) {
             orders = ordData.map(o => ({
                 id: o.id,
@@ -57,7 +57,7 @@ async function loadDataFromSupabase() {
             }));
         }
 
-        let { data: expData, error: expErr } = await _supabase.from('expenses').select('*');
+        let { data: expData, error: expErr } = await _supabase.from('expenses').select('*').eq('user_id', currentUser.phone);
         if(!expErr && expData) expenses = expData;
 
     } catch (err) {
@@ -70,15 +70,13 @@ async function loadDataFromSupabase() {
 
 function loadLocalFallback() {
     recipients = JSON.parse(localStorage.getItem('cib_recipients')) || [
-        { name: "Orxan", fin: "1ABC234" },
-        { name: "Elşən", fin: "2XYZ789" },
-        { name: "Aysel", fin: "3LMN456" }
+        { name: "Orxan", fin: "1ABC234" }
     ];
     orders = JSON.parse(localStorage.getItem('cib_orders')) || [];
     expenses = JSON.parse(localStorage.getItem('cib_expenses')) || [];
 }
 
-// --- MƏLUMATLARI SUPABASE-Ə YAZMAQ (SAVE) ---
+// --- MƏLUMATLARI SUPABASE-Ə YAZMAQ ---
 async function saveData() {
     localStorage.setItem('cib_recipients', JSON.stringify(recipients));
     localStorage.setItem('cib_orders', JSON.stringify(orders));
@@ -98,9 +96,10 @@ async function saveData() {
 }
 
 async function syncOrderToSupabase(order) {
-    if(!_supabase) return;
+    if(!_supabase || !currentUser) return;
     await _supabase.from('orders').upsert({
         id: order.id,
+        user_id: currentUser.phone,
         product_name: order.productName,
         product_note: order.productNote,
         store_platform: order.storePlatform,
@@ -126,9 +125,10 @@ async function deleteOrderFromSupabase(id) {
 }
 
 async function syncExpenseToSupabase(expense) {
-    if(!_supabase) return;
+    if(!_supabase || !currentUser) return;
     await _supabase.from('expenses').upsert({
         id: expense.id,
+        user_id: currentUser.phone,
         category: expense.category,
         title: expense.title,
         amount: expense.amount
@@ -141,8 +141,9 @@ async function deleteExpenseFromSupabase(id) {
 }
 
 async function syncRecipientToSupabase(rec) {
-    if(!_supabase) return;
+    if(!_supabase || !currentUser) return;
     await _supabase.from('recipients').upsert({
+        user_id: currentUser.phone,
         name: rec.name,
         fin: rec.fin
     });
