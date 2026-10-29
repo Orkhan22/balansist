@@ -14,30 +14,66 @@
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex justify-center items-start">
 
-    <!-- GİRİŞ EKRANI (E-poçt ilə) -->
+    <!-- GİRİŞ / QEYDİYYAT EKRANI -->
     <div id="authScreen" class="fixed inset-0 bg-slate-900 flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-5">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4">
             <div class="text-center space-y-1">
                 <h1 class="text-xl font-black text-slate-900">BALANSİST</h1>
-                <p class="text-xs text-slate-500">Biznesinizi buludda idarə edin</p>
+                <p id="authSubtitle" class="text-xs text-slate-500">Biznesinizi buludda idarə edin</p>
             </div>
 
-            <div id="emailLoginForm" class="space-y-4">
-                <div class="space-y-1">
-                    <label class="text-[11px] font-bold text-slate-600">E-poçt Ünvanınız</label>
-                    <div class="flex items-center bg-slate-50 rounded-2xl border border-slate-200 px-3 py-2.5 focus-within:border-indigo-600">
-                        <span class="text-slate-400 mr-2 text-sm">📧</span>
-                        <input type="email" id="inputEmail" placeholder="orxan@example.com" class="w-full bg-transparent text-sm text-slate-800 outline-none">
+            <!-- Forma -->
+            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+                <div id="nameFields" class="grid grid-cols-2 gap-2 hidden">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-600">Ad</label>
+                        <input type="text" id="regName" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600" placeholder="Orxan">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-600">Soyad</label>
+                        <input type="text" id="regSurname" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600" placeholder="Cəfərli">
                     </div>
                 </div>
-                <button type="button" onclick="handleEmailLogin(event)" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 cursor-pointer">
+
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-600">E-poçt Ünvanı</label>
+                    <input type="email" id="authEmail" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-indigo-600" placeholder="user@example.com">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-600">Şifrə</label>
+                    <input type="password" id="authPassword" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-indigo-600" placeholder="••••••••">
+                </div>
+
+                <div id="rememberMeContainer" class="flex items-center justify-between text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-600 text-[11px]">
+                        <input type="checkbox" id="rememberMeCheck" class="rounded accent-indigo-600"> Məni xatırla
+                    </label>
+                    <button type="button" onclick="switchAuthMode('forgot')" class="text-indigo-600 font-bold hover:underline text-[11px]">Şifrəni unutmusan?</button>
+                </div>
+
+                <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 cursor-pointer">
                     Daxil Ol
                 </button>
+            </form>
+
+            <!-- Sosial Girişlər -->
+            <div id="socialLoginSection" class="space-y-2 pt-2 border-t border-slate-100">
+                <button type="button" onclick="socialLogin('google')" class="w-full py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2">
+                    <span>🌐</span> Google ilə daxil ol
+                </button>
+            </div>
+
+            <!-- Keçid Düymələri -->
+            <div class="text-center pt-2">
+                <p id="authSwitchText" class="text-xs text-slate-500">
+                    Hesabınız yoxdur? <button type="button" onclick="switchAuthMode('register')" class="text-indigo-600 font-bold hover:underline">Qeydiyyatdan keç</button>
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- ƏSAS TƏTBİQ EKRANI (Mobil Çərçivədə) -->
+    <!-- ƏSAS TƏTBİQ EKRANI -->
     <div id="appScreen" class="hidden min-h-screen w-full max-w-md bg-slate-900 shadow-2xl relative border-x border-slate-800 pb-10">
         <!-- HEADER -->
         <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
@@ -62,7 +98,7 @@
             </div>
         </header>
 
-        <!-- YUXARI NAVİQASİYA (MENYULAR BAŞLIĞIN ALTINDA) -->
+        <!-- YUXARI NAVİQASİYA -->
         <nav class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700 px-3 py-2 flex justify-around items-center sticky top-[61px] z-40 shadow-sm">
             <button type="button" id="tabDashboardBtn" onclick="switchTab('dashboard')" class="flex-1 py-1.5 text-[10px] font-bold rounded-xl bg-white text-indigo-600 shadow-sm transition-all cursor-pointer text-center">
                 🏠 İdarəetmə
@@ -81,47 +117,16 @@
         <!-- KONTENT BÖLGƏLƏRİ -->
         <main class="p-4 space-y-4">
             
-            <!-- 1. DASHBOARD TAB -->
+            <!-- 1. DASHBOARD -->
             <div id="tabDashboardContent" class="space-y-4">
-                
-                <!-- Paket Xəbərdarlığı -->
-                <div id="packageWarningBanner" class="hidden bg-rose-500/10 border border-rose-500/30 p-3 rounded-2xl flex justify-between items-center">
-                    <div class="flex items-center gap-2 text-rose-400 text-xs font-bold">
-                        <span>⚠️</span>
-                        <span>Paket ehtiyatı azaldı: <span id="warningPackageCount">0</span> ədəd qaldı!</span>
-                    </div>
-                    <button type="button" onclick="addPackageExpensePrompt()" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[10px] font-bold cursor-pointer">
-                        50 ədəd al
-                    </button>
-                </div>
-
-                <!-- Statistika Kartları -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 shadow-sm space-y-1">
                         <div class="text-[10px] font-bold text-slate-400">Ümumi Dövriyyə (Ay)</div>
                         <div id="statTotalTurnover" class="text-base font-black text-emerald-400">0.00 ₼</div>
-                        <div id="statTurnoverBadge" class="text-[10px] text-emerald-500 font-bold">+0% keçən aya nisbətən</div>
                     </div>
                     <div class="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 shadow-sm space-y-1">
                         <div class="text-[10px] font-bold text-slate-400">Xalis Mənfəət</div>
                         <div id="statNetProfit" class="text-base font-black text-indigo-400">0.00 ₼</div>
-                        <div class="text-[10px] text-slate-500">Xərclər çıxılmaqla</div>
-                    </div>
-                </div>
-
-                <!-- Əlavə Maliyyə Xülasəsi -->
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700 text-center">
-                        <div class="text-[9px] text-slate-400 font-bold">Ümumi Maya</div>
-                        <div id="statTotalCost" class="text-xs font-bold text-slate-200">0.00 ₼</div>
-                    </div>
-                    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700 text-center">
-                        <div class="text-[9px] text-slate-400 font-bold">Qalıq Borc</div>
-                        <div id="statTotalDebt" class="text-xs font-bold text-rose-400">0.00 ₼</div>
-                    </div>
-                    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700 text-center">
-                        <div class="text-[9px] text-slate-400 font-bold">Ümumi Xərc</div>
-                        <div id="statTotalExpenses" class="text-xs font-bold text-amber-400">0.00 ₼</div>
                     </div>
                 </div>
 
@@ -134,321 +139,65 @@
 
                     <form id="orderForm" onsubmit="saveOrder(event)" class="space-y-3">
                         <input type="hidden" id="editOrderId">
-
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-600">Məhsulun Adı</label>
-                                <input type="text" id="productName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600" placeholder="Məs: Geyim...">
+                                <input type="text" id="productName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none" placeholder="Məs: Geyim...">
                             </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Mağaza / Platforma</label>
-                                <input type="text" id="storePlatform" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600" placeholder="Məs: Trendyol, 1688...">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-600">Məhsul Qeydi / Ölçü / Rəng</label>
-                            <input type="text" id="productNote" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600" placeholder="Məs: L ölçü, qara rəng">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-600">Müştəri Adı</label>
-                                <input type="text" id="customerName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600" placeholder="Aygün xanım">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Müştəri Nömrəsi</label>
-                                <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 focus-within:border-indigo-600">
-                                    <span class="text-[10px] font-bold text-slate-500 mr-1">+994</span>
-                                    <input type="tel" id="customerPhone" maxlength="9" required class="w-full bg-transparent text-xs font-medium outline-none" placeholder="xx xxx xx xx">
-                                </div>
+                                <input type="text" id="customerName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none" placeholder="Aygün xanım">
                             </div>
                         </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Gömrük Şəxsi (Alan)</label>
-                                <select id="recipientSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600">
-                                    <!-- Dinamik dolur -->
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Sifariş Statusu</label>
-                                <select id="orderStatus" onchange="calculateProfit()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600">
-                                    <option value="Sifariş gözləyir">Sifariş gözləyir</option>
-                                    <option value="Sifariş olundu / Yolda">Sifariş olundu / Yolda</option>
-                                    <option value="Anbarda">Anbarda</option>
-                                    <option value="Təhvil verildi">Təhvil verildi</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Qiymət Hesablamaları -->
-                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
-                            <div class="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label class="text-[9px] font-bold text-slate-500">Satış (₼)</label>
-                                    <input type="number" step="0.01" id="sellPrice" oninput="calculateProfit()" required class="w-full bg-white border border-slate-200 rounded-xl px-2 py-1 text-xs font-bold outline-none" placeholder="0">
-                                </div>
-                                <div>
-                                    <label class="text-[9px] font-bold text-slate-500">Alınan Beh (₼)</label>
-                                    <input type="number" step="0.01" id="paidAmount" oninput="calculateProfit()" required class="w-full bg-white border border-slate-200 rounded-xl px-2 py-1 text-xs font-bold outline-none" placeholder="0">
-                                </div>
-                                <div>
-                                    <label class="text-[9px] font-bold text-slate-500">Maya (₼)</label>
-                                    <input type="number" step="0.01" id="costPrice" oninput="calculateProfit()" required class="w-full bg-white border border-slate-200 rounded-xl px-2 py-1 text-xs font-bold outline-none" placeholder="0">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[9px] font-bold text-slate-500">Kargo Haqqı</label>
-                                    <input type="number" step="0.01" id="cargoFee" oninput="calculateProfit()" class="w-full bg-white border border-slate-200 rounded-xl px-2 py-1 text-xs font-bold outline-none" placeholder="0">
-                                </div>
-                                <div>
-                                    <label class="text-[9px] font-bold text-slate-500">Kargo Valyutası</label>
-                                    <select id="cargoCurrency" onchange="calculateProfit()" class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold outline-none">
-                                        <option value="USD">USD ($)</option>
-                                        <option value="EUR">EUR (€)</option>
-                                        <option value="CNY">CNY (¥)</option>
-                                        <option value="AZN">AZN (₼)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Canlı Hesablanma -->
-                            <div class="flex justify-between items-center pt-2 border-t border-slate-200 text-xs">
-                                <div>Qalıq Borc: <span id="liveDebt" class="font-bold text-rose-600">0.00 AZN</span></div>
-                                <div>Təxmini Mənfəət: <span id="liveProfit" class="font-bold text-emerald-700">0.00 AZN</span></div>
-                            </div>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <button type="submit" id="submitOrderBtn" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold transition-all shadow-md cursor-pointer">
-                                Sifarişi Yadda Saxla
-                            </button>
-                            <button type="button" id="cancelEditBtn" onclick="resetOrderForm()" class="hidden px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl text-xs font-bold transition-all cursor-pointer">
-                                Ləğv Et
-                            </button>
-                        </div>
+                        <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-2xl text-xs font-bold shadow-md cursor-pointer">Sifarişi Yadda Saxla</button>
                     </form>
                 </div>
             </div>
 
-            <!-- 2. SİFARİŞLƏR SİYAHISI TAB -->
+            <!-- 2. SİFARİŞLƏR -->
             <div id="tabOrdersContent" class="hidden space-y-3">
                 <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-3">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-sm font-black text-indigo-600">📦 Bütün Sifarişlər</h2>
-                        <div class="flex gap-1.5">
-                            <span id="ordersCountBadge" class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-lg">0</span>
-                            <span id="ordersTotalSumBadge" class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-lg">0 ₼</span>
-                        </div>
-                    </div>
-
-                    <!-- Axtarış və Filtrlər -->
-                    <div class="space-y-2">
-                        <input type="text" id="searchInput" oninput="updateOrdersUI()" placeholder="🔍 Müştəri adı, nömrə və ya məhsul axtar..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600">
-                        
-                        <div class="grid grid-cols-3 gap-1.5">
-                            <select id="filterStatus" onchange="updateOrdersUI()" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-[10px] font-bold text-slate-700 outline-none">
-                                <option value="">Bütün Statuslar</option>
-                                <option value="Sifariş gözləyir">Sifariş gözləyir</option>
-                                <option value="Sifariş olundu / Yolda">Sifariş olundu / Yolda</option>
-                                <option value="Anbarda">Anbarda</option>
-                                <option value="Təhvil verildi">Təhvil verildi</option>
-                            </select>
-                            <select id="filterRecipient" onchange="updateOrdersUI()" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-[10px] font-bold text-slate-700 outline-none">
-                                <option value="">Gömrük Şəxsi</option>
-                            </select>
-                            <input type="date" id="filterDate" onchange="updateOrdersUI()" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-[10px] font-bold text-slate-700 outline-none">
-                        </div>
-                        <button type="button" onclick="resetFilters()" class="w-full py-1 text-[10px] font-bold text-slate-500 hover:text-indigo-600 transition-all cursor-pointer">
-                            Filtrləri Təmizlə ✕
-                        </button>
-                    </div>
-
-                    <div id="ordersList" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-                        <!-- Sifarişlər dinamik gəlir -->
-                    </div>
+                    <h2 class="text-sm font-black text-indigo-600">📦 Bütün Sifarişlər</h2>
+                    <div id="ordersList" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
                 </div>
             </div>
 
-            <!-- 3. XƏRCLƏR TAB -->
+            <!-- 3. XƏRCLƏR -->
             <div id="tabExpensesContent" class="hidden space-y-3">
-                <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-sm font-black text-indigo-600">💸 Biznes Xərcləri</h2>
-                        <span id="expensesTotalBadge" class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-lg">Cəmi: 0 ₼</span>
-                    </div>
-
-                    <!-- Xərc əlavə etmə formu -->
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Kateqoriya</label>
-                                <select id="expenseCategory" class="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-medium outline-none">
-                                    <option value="📦 Qablaşdırma">📦 Qablaşdırma</option>
-                                    <option value="🚚 Kargo / Daşıma">🚚 Kargo / Daşıma</option>
-                                    <option value="📢 Reklam / Marketinq">📢 Reklam / Marketinq</option>
-                                    <option value="⚙️ Digər Xərclər">⚙️ Digər Xərclər</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Məbləğ (₼)</label>
-                                <input type="number" step="0.01" id="expenseAmount" class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none" placeholder="0.00">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-600">Xərcin Adı / Açıqlama</label>
-                            <input type="text" id="expenseTitle" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium outline-none" placeholder="Məs: Instagram reklamı">
-                        </div>
-                        <button type="button" onclick="addExpense()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md">
-                            Xərci Qeydə Al
-                        </button>
-                    </div>
-
-                    <div id="expensesFullListContainer" class="space-y-2 max-h-[50vh] overflow-y-auto">
-                        <!-- Xərclər dinamik gəlir -->
-                    </div>
+                <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-3">
+                    <h2 class="text-sm font-black text-indigo-600">💸 Xərclər</h2>
+                    <div id="expensesFullListContainer" class="space-y-2"></div>
                 </div>
             </div>
 
-            <!-- 4. TƏNZİMLƏMƏLƏR TAB -->
+            <!-- 4. AYARLAR -->
             <div id="tabSettingsContent" class="hidden space-y-3">
                 <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-4">
-                    <h2 class="text-sm font-black text-indigo-600">⚙️ Tənzimləmələr və Profil</h2>
-
-                    <!-- Profil Şəkli və Məlumatları -->
-                    <div class="space-y-3 border-b border-slate-200 pb-4">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden relative">
-                                <img id="settingsAvatarPreview" src="" class="w-full h-full object-cover hidden">
-                                <span id="settingsAvatarPlaceholder" class="text-xl">👤</span>
-                            </div>
-                            <div class="space-y-1">
-                                <label class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-bold cursor-pointer inline-block">
-                                    Şəkil Seç <input type="file" accept="image/*" onchange="previewSettingsAvatar(event)" class="hidden">
-                                </label>
-                                <button type="button" id="removeAvatarBtn" onclick="removeAvatar()" class="text-[10px] text-rose-500 font-bold block hover:underline hidden">Şəkli sil</button>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Ad</label>
-                                <input type="text" id="settingsName" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Soyad</label>
-                                <input type="text" id="settingsSurname" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-600">Şirkət / Mağaza Adı</label>
-                            <input type="text" id="settingsCompanyName" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600">
-                        </div>
-
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-600">E-poçt Ünvanı</label>
-                            <input type="email" id="settingsEmail" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-indigo-600">
-                        </div>
-
-                        <button type="button" onclick="saveProfileSettings()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer">
-                            Profili Yadda Saxla
-                        </button>
-                    </div>
-
-                    <!-- Gömrük Şəxslərinin İdarə Edilməsi -->
-                    <div class="space-y-3 border-b border-slate-200 pb-4">
-                        <h3 class="text-xs font-bold text-slate-800">🛃 Gömrük Şəxsləri (Limit İdarəetməsi)</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="settingsNewRecipientName" placeholder="Ad (Məs: Orxan)" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none">
-                            <input type="text" id="settingsNewRecipientFin" placeholder="FİN Kodu (Məs: 1ABC234)" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium uppercase outline-none">
-                        </div>
-                        <button type="button" onclick="addRecipientFromSettings()" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all cursor-pointer">
-                            Gömrük Şəxsi Əlavə Et
-                        </button>
-                        <div id="settingsRecipientsList" class="space-y-1.5 pt-1">
-                            <!-- Dinamik dolur -->
-                        </div>
-                    </div>
-
-                    <!-- Valyuta və Paket Ayarları -->
-                    <div class="space-y-3 border-b border-slate-200 pb-4">
-                        <h3 class="text-xs font-bold text-slate-800">💱 Valyuta Məzənnələri və Paket</h3>
-                        <div class="grid grid-cols-3 gap-2">
-                            <div>
-                                <label class="text-[9px] font-bold text-slate-500">USD Məzənnə</label>
-                                <input type="number" step="0.01" id="usdRate" value="1.70" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold outline-none">
-                            </div>
-                            <div>
-                                <label class="text-[9px] font-bold text-slate-500">EUR Məzənnə</label>
-                                <input type="number" step="0.01" id="eurRate" value="1.85" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold outline-none">
-                            </div>
-                            <div>
-                                <label class="text-[9px] font-bold text-slate-500">CNY Məzənnə</label>
-                                <input type="number" step="0.01" id="cnyRate" value="0.24" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold outline-none">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[9px] font-bold text-slate-500">Paket Maya Qymət (₼)</label>
-                                <input type="number" step="0.01" id="settingsPackageCost" value="0.15" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none">
-                            </div>
-                            <div>
-                                <label class="text-[9px] font-bold text-slate-500">Mövcud Paket Sayı</label>
-                                <input type="number" id="settingsPackageStock" value="50" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none">
-                            </div>
-                        </div>
-                        <button type="button" onclick="savePackageStock()" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all cursor-pointer">
-                            Ayarları Saxla
-                        </button>
-                    </div>
-
-                    <!-- Backup və Excel İxracı -->
-                    <div class="space-y-2">
-                        <h3 class="text-xs font-bold text-slate-800">📊 Hesabatlar və Ehtiyat Nüsxə</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button type="button" onclick="exportToCSV()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm">
-                                📥 Excel Hesabatı
-                            </button>
-                            <button type="button" onclick="exportBackupData()" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm">
-                                💾 Backup Et (.json)
-                            </button>
-                        </div>
-                        <label class="block w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center rounded-xl text-xs font-bold transition-all cursor-pointer border border-slate-200">
-                            📂 Backup Faylından Bərpa Et <input type="file" accept=".json" onchange="importBackupData(event)" class="hidden">
-                        </label>
+                    <h2 class="text-sm font-black text-indigo-600">⚙️ Tənzimləmələr</h2>
+                    <!-- Şifrə Dəyişmə Bölməsi -->
+                    <div class="space-y-2 border-t border-slate-100 pt-3">
+                        <h3 class="text-xs font-bold text-slate-800">Şifrəni Yenilə</h3>
+                        <input type="password" id="newPasswordInput" placeholder="Yeni şifrə" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none">
+                        <button type="button" onclick="updateUserPassword()" class="w-full py-2 bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer">Şifrəni Dəyiş</button>
                     </div>
                 </div>
             </div>
 
         </main>
 
-        <!-- GÖMRÜK LİMİTİ MODALI -->
+        <!-- MODAL -->
         <div id="trackerModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-2xl">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-black text-indigo-400">🛃 Gömrük Limitləri ($300 Ay)</h3>
-                    <button type="button" onclick="openCustomsModal()" class="text-slate-400 hover:text-white text-base font-bold cursor-pointer">✕</button>
-                </div>
-                <div id="recipientsList" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-                    <!-- Dinamik dolur -->
-                </div>
+                <h3 class="text-sm font-black text-indigo-400">🛃 Gömrük Limitləri</h3>
+                <button type="button" onclick="openCustomsModal()" class="text-white">Bağla</button>
             </div>
         </div>
 
-        <!-- TOAST BİLDİRİŞİ -->
-        <div id="toastNotification" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white border border-slate-700 px-4 py-2.5 rounded-2xl shadow-2xl z-50 text-xs font-bold flex items-center gap-2">
-            <span>✨</span>
-            <span id="toastText">Bildiriş mətni</span>
-        </div>
+        <!-- TOAST -->
+        <div id="toastNotification" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white border border-slate-700 px-4 py-2.5 rounded-2xl shadow-2xl z-50 text-xs font-bold"></div>
     </div>
 
-    <!-- Əsas JavaScript Faylı -->
+    <!-- Əsas JavaScript -->
     <script src="app.js"></script>
 </body>
 </html>
