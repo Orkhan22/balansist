@@ -1,7 +1,7 @@
 // --- SUPABASE BAĞLANTISI ---
-const SUPABASE_URL = https://tfeljeyagcvoahsocfpu.supabase.co/rest/v1/;
-const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZWxqZXlhZ2N2b2Foc29jZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMTYyNTIsImV4cCI6MjEwODc5MjI1Mn0.29bfb_jAIeF0K1aL7OqqK14FpCOdoQQdEK06brME7fs;
-const _supabase = (typeof supabase !== 'undefined' && SUPABASE_URL !== https://tfeljeyagcvoahsocfpu.supabase.co/rest/v1/) 
+const SUPABASE_URL = 'https://tfeljeyagcvoahsocfpu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZWxqZXlhZ2N2b2Foc29jZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMTYyNTIsImV4cCI6MjEwODc5MjI1Mn0.29bfb_jAIeF0K1aL7OqqK14FpCOdoQQdEK06brME7fs';
+const _supabase = (typeof supabase !== 'undefined' && SUPABASE_URL !== '') 
     ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
     : null;
 
@@ -26,17 +26,14 @@ function showToast(text) {
 // --- SUPABASE-DƏN MƏLUMATLARI ÇƏKMƏK (LOAD) ---
 async function loadDataFromSupabase() {
     if (!_supabase) {
-        // Əgər Supabase qoşulmayıbsa localStorage-dən oxu
         loadLocalFallback();
         return;
     }
 
     try {
-        // Gömrük şəxsləri
         let { data: recData, error: recErr } = await _supabase.from('recipients').select('*');
         if(!recErr && recData) recipients = recData;
 
-        // Sifarişlər
         let { data: ordData, error: ordErr } = await _supabase.from('orders').select('*');
         if(!ordErr && ordData) {
             orders = ordData.map(o => ({
@@ -60,7 +57,6 @@ async function loadDataFromSupabase() {
             }));
         }
 
-        // Xərclər
         let { data: expData, error: expErr } = await _supabase.from('expenses').select('*');
         if(!expErr && expData) expenses = expData;
 
@@ -84,7 +80,6 @@ function loadLocalFallback() {
 
 // --- MƏLUMATLARI SUPABASE-Ə YAZMAQ (SAVE) ---
 async function saveData() {
-    // Həmçinin localStorage-də ehtiyat kimi saxlayırıq
     localStorage.setItem('cib_recipients', JSON.stringify(recipients));
     localStorage.setItem('cib_orders', JSON.stringify(orders));
     localStorage.setItem('cib_expenses', JSON.stringify(expenses));
@@ -481,7 +476,7 @@ function updateSettingsRecipientsList() {
                     <div class="font-bold text-slate-800">👤 ${r.name}</div>
                     <div class="text-[10px] text-indigo-600 font-mono">FİN: ${r.fin}</div>
                 </div>
-                <button onclick="removeRecipient('${r.name}')" class="text-rose-600 font-bold hover:underline cursor-pointer">Sil</button>
+                <button type="button" onclick="removeRecipient('${r.name}')" class="text-rose-600 font-bold hover:underline cursor-pointer">Sil</button>
             </div>
         `;
     });
@@ -599,7 +594,7 @@ function updateExpensesUI() {
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="font-bold text-amber-600">${e.amount.toFixed(2)} ₼</span>
-                    <button onclick="deleteExpense(${e.id})" class="text-rose-500 font-bold hover:underline cursor-pointer">&times;</button>
+                    <button type="button" onclick="deleteExpense(${e.id})" class="text-rose-500 font-bold hover:underline cursor-pointer">&times;</button>
                 </div>
             </div>
         `;
@@ -826,7 +821,7 @@ function updateOrdersUI() {
         let statusColor = statusVal === 'Təhvil verildi' ? 'bg-emerald-50 text-emerald-700' : (statusVal === 'Anbarda' ? 'bg-indigo-50 text-indigo-700' : (statusVal === 'Sifariş olundu / Yolda' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'));
         
         let cleanPhoneDigits = (o.phone || '').replace(/\D/g, '');
-        let waText = encodeURIComponent(`${o.customer} xanım, zəhmət olmasa sifarişiniz etdiyiniz məhsulun qalıq ödənişini (${o.debt.toFixed(2)} AZN) edəsiniz.Təşəkkür edirik!`);
+        let waText = encodeURIComponent(`${o.customer} xanım, zəhmət olmasa sifariş etdiyiniz məhsulun qalıq ödənişini (${o.debt.toFixed(2)} AZN) edəsiniz. Təşəkkür edirik!`);
         let debtBadge = o.debt > 0 
             ? `<a href="https://wa.me/${cleanPhoneDigits}?text=${waText}" target="_blank" class="text-[9px] bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-bold hover:bg-rose-100 cursor-pointer" title="WhatsApp ilə borc xatırlat">💬 Borc: ${o.debt.toFixed(2)} ₼</a>` 
             : `<span class="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-bold">Ödənilib</span>`;
@@ -856,8 +851,8 @@ function updateOrdersUI() {
                         <span class="font-bold text-emerald-600 text-sm">+${o.profit.toFixed(2)} ₼</span>
                         <div class="text-[10px] text-slate-400">Satış: ${o.sell} ₼</div>
                     </div>
-                    <button onclick="editOrder('${o.id}')" class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-100 cursor-pointer" title="Düzəliş et">✏️</button>
-                    <button onclick="deleteOrder('${o.id}')" class="px-2 py-1 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-bold hover:bg-rose-100 cursor-pointer" title="Sil">🗑️</button>
+                    <button type="button" onclick="editOrder('${o.id}')" class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-100 cursor-pointer" title="Düzəliş et">✏️</button>
+                    <button type="button" onclick="deleteOrder('${o.id}')" class="px-2 py-1 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-bold hover:bg-rose-100 cursor-pointer" title="Sil">🗑️</button>
                 </div>
             </div>
         `;
