@@ -3,3 +3,4 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; }
 .lbl { display: block; font-size: 10px; font-weight: 700; color: #475569; margin-bottom: 2px; }
 .inp { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px 12px; font-size: 12px; font-weight: 500; color: #1e293b; outline: none; }
 .inp:focus { border-color: #4f46e5; }
+.inp.font-bold { font-weight: 700; }

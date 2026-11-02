@@ -1,4 +1,4 @@
-const CACHE = 'balansist-v2';
+const CACHE = 'balansist-v3';
 const ASSETS = ['./', 'index.html', 'app.js', 'style.css', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
