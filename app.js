@@ -185,6 +185,7 @@ async function saveOrder(e) {
   e.preventDefault();
   const phone = $("customerPhone").value.trim();
   if (!/^\d{9}$/.test(phone)) return showToast("Nömrə 9 rəqəm olmalıdır (məs: 501234567)!");
+  if (num("costPrice") <= 0) return showToast("Maya qiyməti mütləq daxil edilməlidir!");
   const row = {
     product_name: $("productName").value.trim(), store_platform: $("storePlatform").value.trim(), product_note: $("productNote").value.trim(),
     customer_name: $("customerName").value.trim(), customer_phone: phone, recipient_id: $("recipientSelect").value || null,
@@ -192,7 +193,16 @@ async function saveOrder(e) {
     cargo_fee: num("cargoFee"), cargo_currency: $("cargoCurrency").value
   };
   const id = $("editOrderId").value;
-  const { error } = id ? await _supabase.from("orders").update(row).eq("id", id) : await _supabase.from("orders").insert(row);
+  let error;
+  if (id) ({ error } = await _supabase.from("orders").update(row).eq("id", id));
+  else {
+    const r = await _supabase.from("orders").insert(row).select().single();
+    error = r.error;
+    if (!error) { // hər yeni sifariş üçün paket xərci avtomatik yazılır
+      const x = await _supabase.from("expenses").insert({ category: "📦 Qablaşdırma", title: `Paket · ${orderNo(r.data)}`, amount: S().pkgCost });
+      if (x.error) showToast("Paket xərci yazılmadı: " + x.error.message);
+    }
+  }
   if (error) return showToast("Xəta: " + error.message);
   if (!id) await saveSettings({ ...S(), pkgStock: Math.max(0, S().pkgStock - 1) }); // hər yeni sifariş 1 paket işlədir
   showToast(id ? "Sifariş yeniləndi!" : "Sifariş əlavə olundu!");
