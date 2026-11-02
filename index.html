@@ -1,203 +1,163 @@
 <!DOCTYPE html>
 <html lang="az">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balansist - Bulud Biznes Meneceri</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4f46e5">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balansist - Bulud Biznes Meneceri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#4f46e5">
+<link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex justify-center items-start">
 
-    <!-- GİRİŞ / QEYDİYYAT EKRANI -->
-    <div id="authScreen" class="fixed inset-0 bg-slate-900 flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4">
-            <div class="text-center space-y-1">
-                <h1 class="text-xl font-black text-slate-900">BALANSİST</h1>
-                <p id="authSubtitle" class="text-xs text-slate-500">Biznesinizi buludda idarə edin</p>
-            </div>
+<!-- GİRİŞ -->
+<div id="authScreen" class="hidden fixed inset-0 bg-slate-900 flex items-center justify-center p-4 z-50">
+  <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4">
+    <div class="text-center space-y-1">
+      <h1 class="text-xl font-black text-slate-900">BALANSİST</h1>
+      <p id="authSubtitle" class="text-xs text-slate-500">Biznesinizi buludda idarə edin</p>
+    </div>
+    <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+      <div id="nameFields" class="grid grid-cols-2 gap-2 hidden">
+        <div><label class="text-[10px] font-bold text-slate-600">Ad</label>
+          <input type="text" id="regName" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-600" placeholder="Orxan"></div>
+        <div><label class="text-[10px] font-bold text-slate-600">Soyad</label>
+          <input type="text" id="regSurname" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 outline-none focus:border-indigo-600" placeholder="Cəfərli"></div>
+      </div>
+      <div class="space-y-1"><label class="text-[10px] font-bold text-slate-600">E-poçt Ünvanı</label>
+        <input type="email" id="authEmail" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-indigo-600" placeholder="user@example.com"></div>
+      <div id="passwordField" class="space-y-1"><label class="text-[10px] font-bold text-slate-600">Şifrə</label>
+        <input type="password" id="authPassword" minlength="6" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-indigo-600" placeholder="••••••••"></div>
+      <div id="rememberMeContainer" class="flex items-center justify-between text-xs">
+        <label class="flex items-center gap-2 cursor-pointer text-slate-600 text-[11px]">
+          <input type="checkbox" id="rememberMeCheck" checked class="rounded accent-indigo-600"> Məni xatırla</label>
+        <button type="button" onclick="switchAuthMode('forgot')" class="text-indigo-600 font-bold hover:underline text-[11px]">Şifrəni unutmusan?</button>
+      </div>
+      <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-600/30 cursor-pointer">Daxil Ol</button>
+    </form>
+    <div id="socialLoginSection" class="space-y-2 pt-2 border-t border-slate-100">
+      <button type="button" onclick="socialLogin('google')" class="w-full py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2"><span>🌐</span> Google ilə daxil ol</button>
+    </div>
+    <div class="text-center pt-2"><p id="authSwitchText" class="text-xs text-slate-500"></p></div>
+  </div>
+</div>
 
-            <!-- Forma -->
-            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3">
-                <div id="nameFields" class="grid grid-cols-2 gap-2 hidden">
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-600">Ad</label>
-                        <input type="text" id="regName" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600" placeholder="Orxan">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-600">Soyad</label>
-                        <input type="text" id="regSurname" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-indigo-600" placeholder="Cəfərli">
-                    </div>
-                </div>
+<!-- TƏTBİQ -->
+<div id="appScreen" class="hidden min-h-screen w-full max-w-md bg-slate-900 shadow-2xl relative border-x border-slate-800 pb-10">
+  <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white overflow-hidden">
+        <img id="appUserAvatarImg" src="" alt="" class="w-full h-full object-cover hidden">
+        <span id="appUserInitial">?</span>
+      </div>
+      <div>
+        <div id="userGreeting" class="text-xs font-bold text-slate-100"></div>
+        <div id="userCompanyInfo" class="text-[10px] text-indigo-400 font-medium"></div>
+        <div id="userContactInfo" class="text-[9px] text-slate-400 font-mono"></div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" onclick="openCustomsModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-bold cursor-pointer">🛃 Gömrük</button>
+      <button type="button" onclick="handleLogout()" class="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold cursor-pointer" title="Çıxış et">🚪</button>
+    </div>
+  </header>
 
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-slate-600">E-poçt Ünvanı</label>
-                    <input type="email" id="authEmail" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-indigo-600" placeholder="user@example.com">
-                </div>
+  <nav class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700 px-3 py-2 flex justify-around items-center sticky top-[61px] z-40">
+    <button type="button" id="tabDashboardBtn" onclick="switchTab('dashboard')">🏠 İdarəetmə</button>
+    <button type="button" id="tabOrdersBtn" onclick="switchTab('orders')">📦 Sifarişlər</button>
+    <button type="button" id="tabExpensesBtn" onclick="switchTab('expenses')">💸 Xərclər</button>
+    <button type="button" id="tabSettingsBtn" onclick="switchTab('settings')">⚙️ Ayarlar</button>
+  </nav>
 
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-slate-600">Şifrə</label>
-                    <input type="password" id="authPassword" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-indigo-600" placeholder="••••••••">
-                </div>
-
-                <div id="rememberMeContainer" class="flex items-center justify-between text-xs">
-                    <label class="flex items-center gap-2 cursor-pointer text-slate-600 text-[11px]">
-                        <input type="checkbox" id="rememberMeCheck" class="rounded accent-indigo-600"> Məni xatırla
-                    </label>
-                    <button type="button" onclick="switchAuthMode('forgot')" class="text-indigo-600 font-bold hover:underline text-[11px]">Şifrəni unutmusan?</button>
-                </div>
-
-                <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 cursor-pointer">
-                    Daxil Ol
-                </button>
-            </form>
-
-            <!-- Sosial Girişlər -->
-            <div id="socialLoginSection" class="space-y-2 pt-2 border-t border-slate-100">
-                <button type="button" onclick="socialLogin('google')" class="w-full py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2">
-                    <span>🌐</span> Google ilə daxil ol
-                </button>
-            </div>
-
-            <!-- Keçid Düymələri -->
-            <div class="text-center pt-2">
-                <p id="authSwitchText" class="text-xs text-slate-500">
-                    Hesabınız yoxdur? <button type="button" onclick="switchAuthMode('register')" class="text-indigo-600 font-bold hover:underline">Qeydiyyatdan keç</button>
-                </p>
-            </div>
+  <main class="p-4 space-y-4">
+    <!-- DASHBOARD -->
+    <div id="tabDashboardContent" class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 space-y-1">
+          <div class="text-[10px] font-bold text-slate-400">Ümumi Dövriyyə (Ay)</div>
+          <div id="statTotalTurnover" class="text-base font-black text-emerald-400">0.00 ₼</div>
         </div>
+        <div class="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 space-y-1">
+          <div class="text-[10px] font-bold text-slate-400">Xalis Mənfəət (Ay)</div>
+          <div id="statNetProfit" class="text-base font-black text-indigo-400">0.00 ₼</div>
+        </div>
+      </div>
+      <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 id="formTitleText" class="text-sm font-black text-indigo-600">➕ Yeni Sifariş</h2>
+          <span id="nextIdPreview" class="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-lg">#ORD-0001</span>
+        </div>
+        <form id="orderForm" onsubmit="saveOrder(event)" class="space-y-3">
+          <input type="hidden" id="editOrderId">
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="lbl">Məhsulun Adı</label><input type="text" id="productName" required class="inp" placeholder="Məs: Geyim"></div>
+            <div><label class="lbl">Müştəri Adı</label><input type="text" id="customerName" required class="inp" placeholder="Aygün xanım"></div>
+            <div><label class="lbl">Satış qiyməti (₼)</label><input type="number" id="orderAmount" required min="0" step="0.01" class="inp" placeholder="0.00"></div>
+            <div><label class="lbl">Maya dəyəri (₼)</label><input type="number" id="orderCost" required min="0" step="0.01" class="inp" placeholder="0.00"></div>
+          </div>
+          <div class="flex gap-2">
+            <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-bold shadow-md cursor-pointer">Sifarişi Yadda Saxla</button>
+            <button type="button" id="cancelEditBtn" onclick="resetOrderForm()" class="hidden px-4 py-3 bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold cursor-pointer">Ləğv et</button>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <!-- ƏSAS TƏTBİQ EKRANI -->
-    <div id="appScreen" class="hidden min-h-screen w-full max-w-md bg-slate-900 shadow-2xl relative border-x border-slate-800 pb-10">
-        <!-- HEADER -->
-        <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-inner overflow-hidden">
-                    <img id="appUserAvatarImg" src="" class="w-full h-full object-cover hidden">
-                    <span id="appUserInitial">O</span>
-                </div>
-                <div>
-                    <div id="userGreeting" class="text-xs font-bold text-slate-100">Orxan Cəfərli</div>
-                    <div id="userCompanyInfo" class="text-[10px] text-indigo-400 font-medium">Stockchafarli</div>
-                    <div id="userContactInfo" class="text-[9px] text-slate-400 font-mono"></div>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <button type="button" onclick="openCustomsModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                    🛃 Gömrük
-                </button>
-                <button type="button" onclick="handleLogout()" class="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold transition-all cursor-pointer" title="Çıxış et">
-                    🚪
-                </button>
-            </div>
-        </header>
-
-        <!-- YUXARI NAVİQASİYA -->
-        <nav class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700 px-3 py-2 flex justify-around items-center sticky top-[61px] z-40 shadow-sm">
-            <button type="button" id="tabDashboardBtn" onclick="switchTab('dashboard')" class="flex-1 py-1.5 text-[10px] font-bold rounded-xl bg-white text-indigo-600 shadow-sm transition-all cursor-pointer text-center">
-                🏠 İdarəetmə
-            </button>
-            <button type="button" id="tabOrdersBtn" onclick="switchTab('orders')" class="flex-1 py-1.5 text-[10px] font-bold text-slate-400 rounded-xl transition-all cursor-pointer text-center">
-                📦 Sifarişlər
-            </button>
-            <button type="button" id="tabExpensesBtn" onclick="switchTab('expenses')" class="flex-1 py-1.5 text-[10px] font-bold text-slate-400 rounded-xl transition-all cursor-pointer text-center">
-                💸 Xərclər
-            </button>
-            <button type="button" id="tabSettingsBtn" onclick="switchTab('settings')" class="flex-1 py-1.5 text-[10px] font-bold text-slate-400 rounded-xl transition-all cursor-pointer text-center">
-                ⚙️ Ayarlar
-            </button>
-        </nav>
-
-        <!-- KONTENT BÖLGƏLƏRİ -->
-        <main class="p-4 space-y-4">
-            
-            <!-- 1. DASHBOARD -->
-            <div id="tabDashboardContent" class="space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 shadow-sm space-y-1">
-                        <div class="text-[10px] font-bold text-slate-400">Ümumi Dövriyyə (Ay)</div>
-                        <div id="statTotalTurnover" class="text-base font-black text-emerald-400">0.00 ₼</div>
-                    </div>
-                    <div class="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 shadow-sm space-y-1">
-                        <div class="text-[10px] font-bold text-slate-400">Xalis Mənfəət</div>
-                        <div id="statNetProfit" class="text-base font-black text-indigo-400">0.00 ₼</div>
-                    </div>
-                </div>
-
-                <!-- Sifariş Formu -->
-                <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h2 id="formTitleText" class="text-sm font-black text-indigo-600">➕ Yeni Sifariş</h2>
-                        <span id="nextIdPreview" class="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-lg">#ORD-0001</span>
-                    </div>
-
-                    <form id="orderForm" onsubmit="saveOrder(event)" class="space-y-3">
-                        <input type="hidden" id="editOrderId">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Məhsulun Adı</label>
-                                <input type="text" id="productName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none" placeholder="Məs: Geyim...">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600">Müştəri Adı</label>
-                                <input type="text" id="customerName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none" placeholder="Aygün xanım">
-                            </div>
-                        </div>
-                        <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-2xl text-xs font-bold shadow-md cursor-pointer">Sifarişi Yadda Saxla</button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- 2. SİFARİŞLƏR -->
-            <div id="tabOrdersContent" class="hidden space-y-3">
-                <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-3">
-                    <h2 class="text-sm font-black text-indigo-600">📦 Bütün Sifarişlər</h2>
-                    <div id="ordersList" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
-                </div>
-            </div>
-
-            <!-- 3. XƏRCLƏR -->
-            <div id="tabExpensesContent" class="hidden space-y-3">
-                <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-3">
-                    <h2 class="text-sm font-black text-indigo-600">💸 Xərclər</h2>
-                    <div id="expensesFullListContainer" class="space-y-2"></div>
-                </div>
-            </div>
-
-            <!-- 4. AYARLAR -->
-            <div id="tabSettingsContent" class="hidden space-y-3">
-                <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-4">
-                    <h2 class="text-sm font-black text-indigo-600">⚙️ Tənzimləmələr</h2>
-                    <!-- Şifrə Dəyişmə Bölməsi -->
-                    <div class="space-y-2 border-t border-slate-100 pt-3">
-                        <h3 class="text-xs font-bold text-slate-800">Şifrəni Yenilə</h3>
-                        <input type="password" id="newPasswordInput" placeholder="Yeni şifrə" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none">
-                        <button type="button" onclick="updateUserPassword()" class="w-full py-2 bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer">Şifrəni Dəyiş</button>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-
-        <!-- MODAL -->
-        <div id="trackerModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-2xl">
-                <h3 class="text-sm font-black text-indigo-400">🛃 Gömrük Limitləri</h3>
-                <button type="button" onclick="openCustomsModal()" class="text-white">Bağla</button>
-            </div>
-        </div>
-
-        <!-- TOAST -->
-        <div id="toastNotification" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white border border-slate-700 px-4 py-2.5 rounded-2xl shadow-2xl z-50 text-xs font-bold"></div>
+    <!-- SİFARİŞLƏR -->
+    <div id="tabOrdersContent" class="hidden space-y-3">
+      <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-3">
+        <h2 class="text-sm font-black text-indigo-600">📦 Bütün Sifarişlər</h2>
+        <div id="ordersList" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
+      </div>
     </div>
 
-    <!-- Əsas JavaScript -->
-    <script src="app.js"></script>
+    <!-- XƏRCLƏR -->
+    <div id="tabExpensesContent" class="hidden space-y-3">
+      <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-3">
+        <h2 class="text-sm font-black text-indigo-600">💸 Xərclər</h2>
+        <form onsubmit="saveExpense(event)" class="grid grid-cols-3 gap-2 items-end">
+          <div class="col-span-2"><label class="lbl">Təyinat</label><input type="text" id="expenseTitle" required class="inp" placeholder="Məs: Kirayə"></div>
+          <div><label class="lbl">Məbləğ (₼)</label><input type="number" id="expenseAmount" required min="0" step="0.01" class="inp"></div>
+          <button type="submit" class="col-span-3 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-bold cursor-pointer">Xərc əlavə et</button>
+        </form>
+        <div id="expensesFullListContainer" class="space-y-2 max-h-[50vh] overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <!-- AYARLAR -->
+    <div id="tabSettingsContent" class="hidden space-y-3">
+      <div class="bg-white text-slate-900 rounded-3xl p-4 shadow-xl space-y-4">
+        <h2 class="text-sm font-black text-indigo-600">⚙️ Tənzimləmələr</h2>
+        <div class="space-y-2 border-t border-slate-100 pt-3">
+          <h3 class="text-xs font-bold text-slate-800">Şirkət adı</h3>
+          <input type="text" id="companyInput" placeholder="Şirkət / mağaza adı" class="inp">
+          <button type="button" onclick="updateCompany()" class="w-full py-2 bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer">Yadda saxla</button>
+        </div>
+        <div class="space-y-2 border-t border-slate-100 pt-3">
+          <h3 class="text-xs font-bold text-slate-800">Şifrəni Yenilə</h3>
+          <input type="password" id="newPasswordInput" placeholder="Yeni şifrə (min. 6 simvol)" class="inp">
+          <button type="button" onclick="updateUserPassword()" class="w-full py-2 bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer">Şifrəni Dəyiş</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="trackerModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-2xl">
+      <h3 class="text-sm font-black text-indigo-400">🛃 Gömrük Limitləri</h3>
+      <button type="button" onclick="openCustomsModal()" class="text-white cursor-pointer">Bağla</button>
+    </div>
+  </div>
+  <div id="toastNotification" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white border border-slate-700 px-4 py-2.5 rounded-2xl shadow-2xl z-50 text-xs font-bold"></div>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
